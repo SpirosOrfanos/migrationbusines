@@ -44,6 +44,8 @@ type BusinessPage struct {
 	Locale             string     `json:"locale,omitempty"`
 	Carousel           []Carousel `json:"carousel,omitempty"`
 	Reusables          []Reusable `json:"reusables,omitempty"`
+	HasContactUs       bool       `json:"hasContactUs,omitempty"`
+	IsBusinessOne      bool       `json:"isBusinessOne,omitempty"`
 }
 
 type Carousel struct {
@@ -52,18 +54,29 @@ type Carousel struct {
 }
 
 type Reusable struct {
-	ID          *int          `json:"id,omitempty"`
-	Component   string        `json:"__component,omitempty"`
-	Title       string        `json:"title,omitempty"`
-	Body        string        `json:"body,omitempty"`
-	Items       []Item        `json:"items,omitempty"`
-	Box         []Box         `json:"box,omitempty"`
-	YouTubeItem []YouTubeItem `json:"youtubeItem,omitempty"`
+	ID          *int               `json:"id,omitempty"`
+	Component   string             `json:"__component,omitempty"`
+	Title       string             `json:"title,omitempty"`
+	Body        string             `json:"body,omitempty"`
+	SecondTitle string             `json:"secondTitle,omitempty"`
+	SecondBody  string             `json:"secondBody,omitempty"`
+	Template    string             `json:"template,omitempty"`
+	Items       []Item             `json:"items,omitempty"`
+	Box         []Box              `json:"box,omitempty"`
+	YouTubeItem []YouTubeItem      `json:"youtubeItem,omitempty"`
+	Grids       []ReusableGridItem `json:"grids,omitempty"`
+	Name        string             `json:"name,omitempty"`
+	Position    string             `json:"position,omitempty"`
 }
 
 type Item struct {
 	Title string `json:"title,omitempty"`
 	Body  string `json:"body,omitempty"`
+}
+
+type ReusableGridItem struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type YouTubeItem struct {

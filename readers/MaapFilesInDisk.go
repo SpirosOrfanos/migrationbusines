@@ -28,7 +28,7 @@ func (srv *MapFilesInDisk) MapFromDisk() map[string]FileInfo {
 	for _, file := range templates {
 		fileName := file.Name()
 		idName := strings.Split(file.Name(), ".")[0]
-		filePath := fmt.Sprintf("%s%s%s", srv.templatePath, "\\\\", fileName)
+		filePath := fmt.Sprintf("%s", fileName)
 		fileItems[idName] = FileInfo{
 			IsTemplate: true,
 			FileName:   fileName,
@@ -40,7 +40,7 @@ func (srv *MapFilesInDisk) MapFromDisk() map[string]FileInfo {
 	for _, file := range custom {
 		fileName := file.Name()
 		idName := strings.Split(file.Name(), ".")[0]
-		filePath := fmt.Sprintf("%s%s%s", srv.customHtmlPath, "\\\\", fileName)
+		filePath := fmt.Sprintf("%s", fileName)
 		fileItems[idName] = FileInfo{
 			IsTemplate: false,
 			FileName:   fileName,

@@ -81,22 +81,17 @@ func (adapter *StrapiAdapter) Insert(body model.BusinessPageInsert) model.Busine
 
 func (adapter *StrapiAdapter) Localizations(body model.BusinessPage, pageId int) model.BusinessPageResponseWrapper {
 	jsonData, _ := json.Marshal(body)
-
 	uri, _ := url.JoinPath(adapter.Host, "api", "business-pages", fmt.Sprintf("%d", pageId), "localizations")
 	req, _ := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(jsonData))
 	req.Header.Add("Content-Type", "application/json")
 	var resp model.BusinessPageResponseWrapper
 	response, err := adapter.HttpClient.Do(req)
 	if err != nil {
-		fmt.Println("______1____________")
-		fmt.Println(err)
 		return model.BusinessPageResponseWrapper{}
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println("______2____________")
-		fmt.Println(err)
 		return model.BusinessPageResponseWrapper{}
 	}
 	err = json.Unmarshal(responseBody, &resp)

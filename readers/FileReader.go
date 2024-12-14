@@ -32,6 +32,7 @@ func (reader *FileReader) Splitter(insertable model.Insertable) {
 	fmt.Println(insertable.FilePath)
 	pages := reader.HandleContent(reader.ReadExcel(insertable.FilePath), insertable)
 	grResp := reader.StrapiAdapter.Insert(model.BusinessPageInsert{Data: *pages.GrPage})
+
 	reader.StrapiAdapter.Localizations(*pages.EnPage, grResp.Data.Id)
 }
 
@@ -52,11 +53,18 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 
 	reusables := make([]model.Reusable, 0)
 	carouselImageIf := sections[0].Values()[0]
+
 	carouselImage := carouselImageIf.(model.Excelized)
 	carousels := make([]model.Carousel, 1)
 	carousels[0] = model.Carousel{
 		Text:             "",
 		MigratedImageURL: fmt.Sprintf("%s%s", reader.ImagePath, carouselImage.GR.Content),
+	}
+
+	if len(sections[0].Values()) > 1 {
+		carouselImageIf2 := sections[0].Values()[1]
+		carouselImage2 := carouselImageIf2.(model.Excelized)
+		carousels[0].Text = carouselImage2.GR.Content
 	}
 	businessPageWrapper := model.BusinessPageWrapper{}
 	businessPage := &model.BusinessPage{
@@ -66,6 +74,7 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		BusinessCategories: insertable.CategoriesEl,
 		Locale:             "el",
 		Carousel:           carousels,
+		IsBusinessOne:      insertable.IsBusiness,
 	}
 
 	for _, item := range sections {
@@ -73,7 +82,6 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		excl := plann.(model.Excelized)
 		if excl.GR.ReusableType == "reusable-html" {
 			reusables = append(reusables, reader.handleReusableHtml(item, true))
-
 		}
 
 		if excl.GR.ReusableType == "reusable-accordion-item" {
@@ -87,6 +95,22 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		if excl.GR.ReusableType == "reusable-video" {
 			reusables = append(reusables, handleVideo(item, true))
 		}
+		if excl.GR.ReusableType == "reusable-grids" {
+			reusables = append(reusables, handleReusableGrids(item, true))
+		}
+		if excl.GR.ReusableType == "reusable-grid-alert" {
+			reusables = append(reusables, handleReusableGridAlert(item, true))
+		}
+
+		if excl.GR.ReusableType == "reusable-testimonial" {
+			reusables = append(reusables, handleReusableTestimonial(item, true))
+		}
+
+		if excl.GR.ReusableType == "hasContactUs" {
+			withContact := hasContact(item, false)
+			businessPage.HasContactUs = withContact
+		}
+
 	}
 
 	businessPage.Reusables = reusables
@@ -100,6 +124,12 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		MigratedImageURL: fmt.Sprintf("%s%s", reader.ImagePath, carouselImage.EN.Content),
 	}
 
+	if len(sections[0].Values()) > 1 {
+		carouselImageIf2 := sections[0].Values()[1]
+		carouselImage2 := carouselImageIf2.(model.Excelized)
+		carouselsEn[0].Text = carouselImage2.EN.Content
+	}
+
 	businessPageEn := &model.BusinessPage{
 		Title:              insertable.TitleEn,
 		PageID:             insertable.PageId,
@@ -107,6 +137,7 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		BusinessCategories: insertable.CategoriesEl,
 		Locale:             "en",
 		Carousel:           carouselsEn,
+		IsBusinessOne:      insertable.IsBusiness,
 	}
 
 	for _, item := range sections {
@@ -124,6 +155,20 @@ func (reader *FileReader) HandleContent(ch2 []model.Excelized, insertable model.
 		}
 		if excl.EN.ReusableType == "reusable-video" {
 			reusablesEn = append(reusablesEn, handleVideo(item, false))
+		}
+		if excl.EN.ReusableType == "reusable-grids" {
+			reusablesEn = append(reusablesEn, handleReusableGrids(item, false))
+		}
+		if excl.EN.ReusableType == "reusable-grid-alert" {
+			reusablesEn = append(reusablesEn, handleReusableGridAlert(item, false))
+		}
+		if excl.GR.ReusableType == "reusable-testimonial" {
+			reusablesEn = append(reusablesEn, handleReusableTestimonial(item, false))
+		}
+
+		if excl.EN.ReusableType == "hasContactUs" {
+			withContact := hasContact(item, false)
+			businessPageEn.HasContactUs = withContact
 		}
 	}
 
@@ -303,6 +348,166 @@ func (reader *FileReader) handleContact(items *sll.List, isGr bool) model.Reusab
 	return reusable
 }
 
+func hasContact(items *sll.List, isGr bool) bool {
+	item := items.Values()[0]
+	itm := item.(model.Excelized)
+	return itm.GR.Content == "Yes" || itm.GR.Content == "YES" ||
+		itm.GR.Content == "Yes " || itm.GR.Content == "YES "
+
+}
+
+func handleReusableTestimonial(items *sll.List, isGr bool) model.Reusable {
+	reusable := model.Reusable{
+		Component: "reusables.grid-info",
+		Title:     "",
+	}
+	if isGr {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+
+			if itm.GR.TypeOfRecord == "quote" || itm.GR.TypeOfRecord == "quote " {
+				reusable.Body = itm.GR.Content
+				continue
+			}
+			if itm.GR.TypeOfRecord == "name" || itm.GR.TypeOfRecord == "name " {
+				reusable.Name = itm.GR.Content
+				continue
+			}
+			if itm.GR.TypeOfRecord == "position" || itm.GR.TypeOfRecord == "position " {
+				reusable.Position = itm.GR.Content
+				continue
+			}
+		}
+	} else {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+
+			if itm.EN.TypeOfRecord == "quote" || itm.EN.TypeOfRecord == "quote" {
+				reusable.Body = itm.EN.Content
+				continue
+			}
+			if itm.EN.TypeOfRecord == "name" || itm.EN.TypeOfRecord == "name " {
+				reusable.Name = itm.EN.Content
+				continue
+			}
+			if itm.EN.TypeOfRecord == "position" || itm.EN.TypeOfRecord == "position " {
+				reusable.Position = itm.EN.Content
+				continue
+			}
+		}
+	}
+	return reusable
+}
+
+func handleReusableGridAlert(items *sll.List, isGr bool) model.Reusable {
+	reusable := model.Reusable{
+		Component: "reusables.grid-alert",
+		Title:     "",
+	}
+	if isGr {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+			if len(reusable.Template) == 0 && (itm.GR.TypeOfRecord == "text" || itm.GR.TypeOfRecord == "title" ||
+				itm.GR.TypeOfRecord == "text " || itm.GR.TypeOfRecord == "title ") {
+				reusable.Title = itm.GR.Content
+				reusable.Template = "default"
+				reusable.Grids = make([]model.ReusableGridItem, 0)
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.GR.TypeOfRecord == "body" || itm.GR.TypeOfRecord == "body") {
+				reusable.Body = itm.GR.Content
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.GR.TypeOfRecord == "secondTitle" || itm.GR.TypeOfRecord == "secondTitle ") {
+				reusable.SecondTitle = itm.GR.Content
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.GR.TypeOfRecord == "secondBody" || itm.GR.TypeOfRecord == "secondBody ") {
+				reusable.SecondBody = itm.GR.Content
+				continue
+			}
+		}
+	} else {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+			if len(reusable.Template) == 0 && (itm.EN.TypeOfRecord == "text" || itm.EN.TypeOfRecord == "title" ||
+				itm.EN.TypeOfRecord == "text " || itm.EN.TypeOfRecord == "title ") {
+				reusable.Title = itm.EN.Content
+				reusable.Template = "default"
+				reusable.Grids = make([]model.ReusableGridItem, 0)
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.EN.TypeOfRecord == "body" || itm.EN.TypeOfRecord == "body") {
+				reusable.Body = itm.EN.Content
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.EN.TypeOfRecord == "secondTitle" || itm.EN.TypeOfRecord == "secondTitle ") {
+				reusable.SecondTitle = itm.EN.Content
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.EN.TypeOfRecord == "secondBody" || itm.EN.TypeOfRecord == "secondBody ") {
+				reusable.SecondBody = itm.EN.Content
+				continue
+			}
+		}
+	}
+	return reusable
+}
+
+func handleReusableGrids(items *sll.List, isGr bool) model.Reusable {
+	reusable := model.Reusable{
+		Component: "reusables.grids",
+		Title:     "",
+	}
+	if isGr {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+			if len(reusable.Template) == 0 && (itm.GR.TypeOfRecord == "text" || itm.GR.TypeOfRecord == "title" ||
+				itm.GR.TypeOfRecord == "text " || itm.GR.TypeOfRecord == "title ") {
+				reusable.Title = itm.GR.Content
+				reusable.Template = "default"
+				reusable.Grids = make([]model.ReusableGridItem, 0)
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.GR.TypeOfRecord == "text" || itm.GR.TypeOfRecord == "title" ||
+				itm.GR.TypeOfRecord == "text " || itm.GR.TypeOfRecord == "title ") {
+				reusable.Grids = append(reusable.Grids, model.ReusableGridItem{
+					Title: itm.GR.Content,
+				})
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.GR.TypeOfRecord == "body" || itm.GR.TypeOfRecord == "body ") {
+				reusable.Grids[len(reusable.Grids)-1].Description = itm.GR.Content
+				continue
+			}
+		}
+	} else {
+		for _, item := range items.Values() {
+			itm := item.(model.Excelized)
+			if len(reusable.Template) == 0 && (itm.EN.TypeOfRecord == "text" || itm.EN.TypeOfRecord == "title" ||
+				itm.EN.TypeOfRecord == "text " || itm.EN.TypeOfRecord == "title ") {
+				reusable.Title = itm.EN.Content
+				reusable.Template = "default"
+				reusable.Grids = make([]model.ReusableGridItem, 0)
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.EN.TypeOfRecord == "text" || itm.EN.TypeOfRecord == "title" ||
+				itm.EN.TypeOfRecord == "text " || itm.EN.TypeOfRecord == "title ") {
+				reusable.Grids = append(reusable.Grids, model.ReusableGridItem{
+					Title: itm.EN.Content,
+				})
+				continue
+			}
+			if len(reusable.Template) > 0 && (itm.EN.TypeOfRecord == "body" || itm.EN.TypeOfRecord == "body" ||
+				itm.EN.TypeOfRecord == "body " || itm.EN.TypeOfRecord == "body ") {
+				reusable.Grids[len(reusable.Grids)-1].Description = itm.EN.Content
+				continue
+			}
+		}
+	}
+
+	return reusable
+}
 func handleVideo(items *sll.List, isGr bool) model.Reusable {
 	reusable := model.Reusable{
 		Component: "reusables.youtubevideos",
@@ -348,7 +553,8 @@ func handleVideo(items *sll.List, isGr bool) model.Reusable {
 
 func (reader *FileReader) ReadExcel(path string) []model.Excelized {
 	set := make([]model.Excelized, 0)
-	f, _ := excelize.OpenFile(reader.FilePath + "/" + path)
+	fmt.Println(reader.FilePath + "\\\\" + path)
+	f, _ := excelize.OpenFile(reader.FilePath + "\\\\" + path)
 	defer func() {
 		if err := f.Close(); err != nil {
 			log.Fatal("Could mot close file", path)

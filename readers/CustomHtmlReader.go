@@ -76,7 +76,7 @@ func (reader *CustomHtmlReader) HandleContent(excl model.Excelized, insertable m
 }
 
 func (reader *CustomHtmlReader) ReadExcel(path string) model.Excelized {
-	f, _ := excelize.OpenFile(reader.FilePath + "/" + path)
+	f, _ := excelize.OpenFile(reader.FilePath + "\\\\" + path)
 	defer func() {
 		if err := f.Close(); err != nil {
 			log.Fatal("Could mot close file", path)
@@ -93,14 +93,14 @@ func (reader *CustomHtmlReader) ReadExcel(path string) model.Excelized {
 			if index == 0 {
 				continue
 			}
-			if index == 1 {
+			/*if index == 1 {
 				res.GR.Title = row[4]
-			}
-			if index == 2 {
+			}*/
+			if index == 1 {
 				res.GR.Content = row[4]
 			}
 
-			if index > 2 {
+			if index > 1 {
 				break
 			}
 		}
@@ -111,14 +111,14 @@ func (reader *CustomHtmlReader) ReadExcel(path string) model.Excelized {
 			if index == 0 {
 				continue
 			}
-			if index == 1 {
+			/*if index == 1 {
 				res.EN.Title = row[4]
-			}
-			if index == 2 {
+			}*/
+			if index == 1 {
 				res.EN.Content = row[4]
 			}
 
-			if index > 2 {
+			if index > 1 {
 				break
 			}
 		}
