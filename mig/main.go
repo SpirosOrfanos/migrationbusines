@@ -8,11 +8,7 @@ import (
 )
 
 func main() {
-	migrate()
-}
-func migrate() {
-	migrator := readers.NewUatToPros()
-	migrator.Migrate()
+	standaloneLoader()
 }
 
 func standaloneLoader() {
