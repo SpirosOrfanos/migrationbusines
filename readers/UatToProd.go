@@ -78,13 +78,11 @@ func (srv *UatToPros) pages(greek map[string]int,
 		}
 	}
 
-	for k, page := range mapByPageId {
-		fmt.Println(k, " : ", page.El.Attributes.PageID, " : ", page.En.Attributes.PageID)
+	for _, page := range mapByPageId {
 		insert := srv.pageToInsertablePage(page.El, greek)
 		elId := srv.InsertPage(insert)
 
 		if len(page.En.Attributes.PageID) > 0 {
-			fmt.Println(k, " : ", "localize")
 			insrtEm := srv.pageToInsertablePage(page.En, english)
 			srv.LocalizePage(insrtEm, elId)
 		}
@@ -201,6 +199,7 @@ func (srv *UatToPros) pageToInsertablePage(page Page, categories map[string]int)
 				}
 				insertableReusable.Box = insb
 			}
+			reusables = append(reusables, insertableReusable)
 		}
 		insertable.Data.Reusables = reusables
 	}
@@ -210,6 +209,7 @@ func (srv *UatToPros) pageToInsertablePage(page Page, categories map[string]int)
 
 func (srv *UatToPros) InsertPage(body InsertPage) int {
 	jsonData, _ := json.Marshal(body)
+	//fmt.Println(string(jsonData))
 	uri, _ := url.JoinPath(srv.host, "api/business-pages")
 	req, _ := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(jsonData))
 	req.Header.Add("Content-Type", "application/json")
@@ -223,7 +223,6 @@ func (srv *UatToPros) InsertPage(body InsertPage) int {
 
 func (srv *UatToPros) LocalizePage(body InsertPage, id int) int {
 	jsonData, _ := json.Marshal(body.Data)
-	//fmt.Println(id, "LocalizePage with", string(jsonData))
 	uri, _ := url.JoinPath(srv.host, "api/business-pages", fmt.Sprintf("%d", id), "localizations")
 	req, _ := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(jsonData))
 	req.Header.Add("Content-Type", "application/json")
