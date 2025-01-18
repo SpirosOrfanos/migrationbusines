@@ -78,13 +78,14 @@ func (srv *UatToPros) pages(greek map[string]int,
 		}
 	}
 
-	for _, page := range mapByPageId {
+	for k, page := range mapByPageId {
+		//fmt.Println(k, " : ", page.El.Attributes.PageID, " : ", page.En.Attributes.PageID)
 		insert := srv.pageToInsertablePage(page.El, greek)
-		elId := srv.InsertPage(insert)
+		elId := srv.InsertPage(insert, k)
 
 		if len(page.En.Attributes.PageID) > 0 {
 			insrtEm := srv.pageToInsertablePage(page.En, english)
-			srv.LocalizePage(insrtEm, elId)
+			srv.LocalizePage(insrtEm, elId, k)
 		}
 	}
 }
@@ -207,9 +208,12 @@ func (srv *UatToPros) pageToInsertablePage(page Page, categories map[string]int)
 	return insertable
 }
 
-func (srv *UatToPros) InsertPage(body InsertPage) int {
+func (srv *UatToPros) InsertPage(body InsertPage, key string) int {
 	jsonData, _ := json.Marshal(body)
-	//fmt.Println(string(jsonData))
+	if key == "more_info_xlarge_4" {
+		fmt.Println("Insert", string(jsonData))
+	}
+
 	uri, _ := url.JoinPath(srv.host, "api/business-pages")
 	req, _ := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(jsonData))
 	req.Header.Add("Content-Type", "application/json")
@@ -221,8 +225,11 @@ func (srv *UatToPros) InsertPage(body InsertPage) int {
 	return resp.InsertPageResponseData.ID
 }
 
-func (srv *UatToPros) LocalizePage(body InsertPage, id int) int {
+func (srv *UatToPros) LocalizePage(body InsertPage, id int, key string) int {
 	jsonData, _ := json.Marshal(body.Data)
+	if key == "more_info_xlarge_4" {
+		fmt.Println("Insert", string(jsonData))
+	}
 	uri, _ := url.JoinPath(srv.host, "api/business-pages", fmt.Sprintf("%d", id), "localizations")
 	req, _ := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(jsonData))
 	req.Header.Add("Content-Type", "application/json")
@@ -247,7 +254,7 @@ type InsertableData struct {
 	IsBusinessOne      bool                 `json:"isBusinessOne,omitempty"`
 	Locale             string               `json:"locale,omitempty"`
 	Reusables          []InsertableReusable `json:"reusables,omitempty"`
-	Carousel           []InsertPageCarousel `json:"carousel"`
+	Carousel           []InsertPageCarousel `json:"carousel,omitempty"`
 }
 type InsertableReusable struct {
 	Component   string                  `json:"__component,omitempty"`
